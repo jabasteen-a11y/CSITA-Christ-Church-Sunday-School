@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSITA Sunday School Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
+    body{height:100vh;display:flex;justify-content:center;align-items:center;
+      background:linear-gradient(135deg,#003366,#00509d,#d4af37);overflow:hidden}
+    body::before{content:"✝";position:absolute;font-size:320px;opacity:0.05;color:white}
+    .login-box{width:430px;max-width:90vw;background:rgba(255,255,255,0.12);
+      backdrop-filter:blur(18px);padding:40px;border-radius:25px;
+      box-shadow:0 15px 35px rgba(0,0,0,.35);text-align:center;color:white;position:relative;z-index:10}
+    .logo{font-size:60px;margin-bottom:10px}
+    h1{font-size:28px;margin-bottom:5px}
+    h2{font-size:18px;font-weight:400;margin-bottom:20px}
+    .quote{font-size:13px;font-style:italic;margin-bottom:25px;line-height:1.6;opacity:.85}
+    input{width:100%;padding:14px 16px;margin-top:12px;border:none;border-radius:10px;
+      font-size:15px;outline:none;font-family:Poppins,sans-serif;background:rgba(255,255,255,0.92);color:#222}
+    input:focus{box-shadow:0 0 0 3px rgba(212,175,55,0.6)}
+    button{width:100%;padding:15px;margin-top:22px;border:none;border-radius:10px;
+      background:#d4af37;font-size:18px;font-weight:700;cursor:pointer;transition:.3s;font-family:Poppins,sans-serif}
+    button:hover{transform:scale(1.02);background:#f2c94c}
+    button:disabled{opacity:.6;transform:none;cursor:not-allowed}
+    .error{background:rgba(220,53,69,0.25);border:1px solid rgba(220,53,69,0.5);
+      border-radius:10px;padding:10px 14px;margin-top:14px;font-size:13px;display:none}
+    .footer{margin-top:25px;font-size:12px;opacity:.7}
+  </style>
+</head>
+<body>
+<div class="login-box">
+  <div class="logo">✝️</div>
+  <h1>CSI Christ Church</h1>
+  <h2>Sunday School Management System</h2>
+  <div class="quote">
+    "Train up a child in the way he should go; and when he is old, he will not depart from it."
+    <br><br><b>Proverbs 22:6</b>
+  </div>
+  <input type="text" id="username" placeholder="Username" onkeydown="if(event.key==='Enter')login()">
+  <input type="password" id="password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+  <div class="error" id="error-msg"></div>
+  <button id="loginBtn" onclick="login()">🔐 LOGIN</button>
+  <div class="footer">© CSITA Christ Church Sunday School</div>
+</div>
+<script>
+  // ── Google Apps Script Web App URL for user login ──────────────
+  const USERS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxoKaBDJrFs3EVi9Z3P5Pu9WcQE_sX4SiHPxyqnu3cTYWmD5Tq2SPKqCn9oN9Nj3Q1d/exec";
+
+  // If already logged in, go straight to app
+  if (sessionStorage.getItem("csita_session")) {
+    window.location.href = "index.html";
+  }
+
+  async function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const btn = document.getElementById("loginBtn");
+    const errBox = document.getElementById("error-msg");
+    errBox.style.display = "none";
+
+    if (!username) { showError("Please enter your username."); return; }
+    if (!password) { showError("Please enter your password."); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Logging in...";
+
+    try {
+      const url = USERS_SCRIPT_URL +
+        "?action=login&username=" + encodeURIComponent(username) +
+        "&password=" + encodeURIComponent(password);
+
+      // Apps Script doGet doesn't support GET with action via fetch+CORS reliably in all cases,
+      // so we use a POST request instead (doPost handles "login" action).
+      const res = await fetch(USERS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "action=login&username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password)
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        sessionStorage.setItem("csita_session", JSON.stringify({ username: data.username, role: data.role }));
+        window.location.href = "index.html";
+      } else {
+        showError("❌ Invalid username or password.");
+        btn.disabled = false;
+        btn.innerHTML = "🔐 LOGIN";
+      }
+    } catch (err) {
+      console.error(err);
+      showError("❌ Could not connect. Check your internet and try again.");
+      btn.disabled = false;
+      btn.innerHTML = "🔐 LOGIN";
+    }
+  }
+
+  function showError(msg) {
+    const e = document.getElementById("error-msg");
+    e.textContent = msg;
+    e.style.display = "block";
+  }
+</script>
+</body>
+</html>
