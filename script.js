@@ -31,7 +31,6 @@ async function saveStudent() {
     sunday_school_class,
     academic_year:      document.getElementById("academic_year").value,
     teacher_name:       document.getElementById("teacher_name").value.trim(),
-    teacher_contact:    document.getElementById("teacher_contact").value.trim(),
     remarks:            document.getElementById("remarks").value.trim()
   };
 
