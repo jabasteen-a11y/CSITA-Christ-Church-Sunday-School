@@ -108,14 +108,22 @@
       <h3>📚 Sunday School Details</h3>
       <div class="grid">
         <div><label>Class *</label>
-          <select id="sunday_school_class">
+          <select id="sunday_school_class" onchange="autoFillTeacher()">
             <option value="">Select class...</option>
-            <option>Pre-Beginners</option><option>Beginners</option><option>Juniors</option>
-            <option>Primary</option><option>Intermediate</option><option>Seniors</option><option>Teens</option>
+            <option>Tiny Tots (Pre-Beginners)</option>
+            <option>Beginners</option>
+            <option>Primary Boys</option>
+            <option>Primary Girls</option>
+            <option>Junior Boys</option>
+            <option>Junior Girls</option>
+            <option>Intermediate</option>
+            <option>Senior Boys</option>
+            <option>Senior Girls-A</option>
+            <option>Senior Girls-B</option>
           </select>
         </div>
         <div><label>Academic Year</label><input id="academic_year" value="2026-27" readonly></div>
-        <div><label>Teacher Name</label><input id="teacher_name" placeholder="Your name"></div>
+        <div><label>Teacher Name</label><input id="teacher_name" placeholder="Auto-filled on class selection" readonly style="background:#f0f0f0;cursor:not-allowed"></div>
       </div>
     </div>
 
@@ -126,7 +134,7 @@
 
     <div class="buttons">
       <button class="btn primary" type="button" id="registerBtn" onclick="saveStudent()">💾 Register Student</button>
-      <button class="btn secondary" type="reset">🔄 Reset</button>
+      <button class="btn secondary" type="button" onclick="document.getElementById('regForm').reset(); document.getElementById('academic_year').value='2026-27'; document.getElementById('teacher_name').value='';">🔄 Reset</button>
     </div>
   </form>
 </div>
@@ -164,6 +172,26 @@
 <script src="script.js"></script>
 <!-- Auth + User Management -->
 <script>
+  // ── Teacher auto-fill map ────────────────────────────────────────
+  const CLASS_TEACHERS = {
+    'Tiny Tots (Pre-Beginners)': 'Miss. Angeline Eunice / Ms. Monica M',
+    'Beginners':                 'Miss. Seth Evangeline',
+    'Primary Boys':              'Ms. Hepzibah Graceline / Ms. Beaulah Roseline',
+    'Primary Girls':             'Mrs. Priyanka Victor',
+    'Junior Boys':               'Mrs. Stella Rani.S',
+    'Junior Girls':              'Dr. Vinnila Jinny.S',
+    'Intermediate':              'Mrs. Malini.A',
+    'Senior Boys':               'Mr. Jabasteen.J',
+    'Senior Girls-A':            'Mrs. Grace Angeline.J.P',
+    'Senior Girls-B':            'Dr. Grace Rebekah.J'
+  };
+
+  function autoFillTeacher() {
+    var cls = document.getElementById('sunday_school_class').value;
+    var teacherInput = document.getElementById('teacher_name');
+    teacherInput.value = CLASS_TEACHERS[cls] || '';
+  }
+
   // ── Auth guard ────────────────────────────────────────────────
   (function() {
     var s = sessionStorage.getItem("csita_session");
