@@ -215,3 +215,37 @@ footer{
     padding:20px;
   }
 }
+
+/* ── Hero images ── */
+.hero-images {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-church-img {
+  width: 220px;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  border: 3px solid rgba(255,255,255,.25);
+}
+
+.hero-logo-img {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  border: 3px solid rgba(255,255,255,.25);
+}
+
+@media(max-width:768px) {
+  .hero-church-img { width: 160px; height: 190px; }
+  .hero-logo-img   { width: 130px; height: 130px; }
+  .hero-images     { gap: 20px; }
+}
