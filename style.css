@@ -227,25 +227,25 @@ footer{
 }
 
 .hero-church-img {
-  width: 220px;
-  height: 260px;
+  width: 130px;
+  height: 155px;
   object-fit: cover;
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.4);
   border: 3px solid rgba(255,255,255,.25);
 }
 
 .hero-logo-img {
-  width: 180px;
-  height: 180px;
+  width: 110px;
+  height: 110px;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  box-shadow: 0 8px 20px rgba(0,0,0,.4);
   border: 3px solid rgba(255,255,255,.25);
 }
 
 @media(max-width:768px) {
-  .hero-church-img { width: 160px; height: 190px; }
-  .hero-logo-img   { width: 130px; height: 130px; }
-  .hero-images     { gap: 20px; }
+  .hero-church-img { width: 90px; height: 110px; }
+  .hero-logo-img   { width: 80px; height: 80px; }
+  .hero-images     { gap: 14px; }
 }
