@@ -37,7 +37,7 @@
     #userBadge{font-size:13px;color:#d4af37;font-weight:600}
   </style>
 </head>
-<body>
+<body style="display:none">
 
 <nav>
   <div class="logo">✝️ Church of South India</div>
@@ -94,7 +94,7 @@
       <h3>👨 Father's Details</h3>
       <div class="grid">
         <div><label>Name</label><input id="father_name" placeholder="Father's full name"></div>
-        <div><label>Profession</label><input id="father_profession" placeholder="Occupation"></div>
+        <div><label>Profession <span style="font-weight:400;opacity:0.75;font-size:13px">(Optional)</span></label><input id="father_profession" placeholder="Occupation"></div>
         <div><label>Contact (WhatsApp preferred)</label><input id="father_contact" type="tel" placeholder="+91 XXXXX XXXXX"></div>
       </div>
     </div>
@@ -103,7 +103,7 @@
       <h3>👩 Mother's Details</h3>
       <div class="grid">
         <div><label>Name</label><input id="mother_name" placeholder="Mother's full name"></div>
-        <div><label>Profession</label><input id="mother_profession" placeholder="Occupation"></div>
+        <div><label>Profession <span style="font-weight:400;opacity:0.75;font-size:13px">(Optional)</span></label><input id="mother_profession" placeholder="Occupation"></div>
         <div><label>Contact (WhatsApp preferred)</label><input id="mother_contact" type="tel" placeholder="+91 XXXXX XXXXX"></div>
       </div>
     </div>
@@ -202,6 +202,7 @@
   (function() {
     var s = sessionStorage.getItem("csita_session");
     if (!s) { window.location.href = "login.html"; }
+    else { document.body.style.display = ""; }
   })();
 
   var currentUser = JSON.parse(sessionStorage.getItem("csita_session") || "{}");
