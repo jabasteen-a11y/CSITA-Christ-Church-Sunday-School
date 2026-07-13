@@ -1,5 +1,5 @@
 // ── Google Apps Script Web App URL ──────────────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKSZRHsooZdr9bEybF01jxo5ZDajqP--XpY3e4YosxUUI65oHMoI02_mXWyiF1_4DlrQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7PEeEFaJ2aSG5Uo1c6b9OdkXcEUGb12kDHH7sqmp5yzcgrEWd-N6eXDeHJGu5E8kwtg/exec";
 
 // ── Save Student to Google Sheet ────────────────────────────────
 async function saveStudent() {

@@ -7,8 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    #adminModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
-    #adminModal.open{display:flex}
+    #adminModal,#studentsModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
+    #adminModal.open,#studentsModal.open{display:flex}
     .modal-box{background:#fff;color:#222;border-radius:18px;width:580px;max-width:95vw;max-height:90vh;
       overflow-y:auto;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
     .modal-box h2{margin-bottom:20px;color:#003366;font-size:20px}
@@ -45,6 +45,7 @@
     <span id="userBadge"></span>
     <a href="#">Home</a>
     <a href="#regForm">Registration</a>
+    <a href="#" id="studentsLink" style="display:none" onclick="openStudents(event)">📋 View Students</a>
     <a href="#" id="adminLink" style="display:none" onclick="openAdmin(event)">👥 Manage Users</a>
     <a href="#" onclick="logout()">Logout</a>
   </div>
@@ -171,6 +172,23 @@
   </div>
 </div>
 
+<!-- Admin: Registered Students Modal -->
+<div id="studentsModal">
+  <div class="modal-box" style="width:650px">
+    <button class="modal-close" onclick="closeStudents()">✕</button>
+    <h2>📋 Registered Students</h2>
+    <input type="text" id="studentSearch" placeholder="🔍 Search by name, class, or registration ID..."
+      style="width:100%;padding:10px 12px;border:1px solid #ccd;border-radius:8px;font-family:Poppins,sans-serif;
+      font-size:14px;outline:none;background:#fff;color:#222;margin-bottom:16px"
+      oninput="renderStudentsTable(this.value)">
+    <div id="studentsCount" style="font-size:13px;color:#666;margin-bottom:10px"></div>
+    <table>
+      <thead><tr><th>Registration ID</th><th>Name</th><th>Class</th></tr></thead>
+      <tbody id="studentsTbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <footer>© CSITA Christ Church Sunday School Management System<br><small style="opacity:0.7;font-size:11px;">Designed & Maintained by Jabasteen J</small></footer>
 
 <!-- App logic -->
@@ -211,6 +229,7 @@
     document.getElementById("userBadge").textContent = "👤 " + (currentUser.username || "");
     if (currentUser.role === "admin") {
       document.getElementById("adminLink").style.display = "inline";
+      document.getElementById("studentsLink").style.display = "inline";
     }
   });
 
@@ -232,6 +251,71 @@
   function closeAdmin() {
     document.getElementById("adminModal").classList.remove("open");
   }
+
+  // ── Registered Students modal ───────────────────────────────────
+  var allStudents = [];
+
+  function openStudents(e) {
+    e.preventDefault();
+    document.getElementById("studentsModal").classList.add("open");
+    document.getElementById("studentSearch").value = "";
+    loadStudents();
+  }
+
+  function closeStudents() {
+    document.getElementById("studentsModal").classList.remove("open");
+  }
+
+  async function loadStudents() {
+    var tbody = document.getElementById("studentsTbody");
+    tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;color:#888'>Loading...</td></tr>";
+    document.getElementById("studentsCount").textContent = "";
+    try {
+      const res = await fetch(SCRIPT_URL + "?action=listStudents");
+      const data = await res.json();
+      if (!data.result || data.result !== "success" || !data.students) {
+        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;color:#c0392b'>Could not load students.</td></tr>";
+        return;
+      }
+      allStudents = data.students;
+      renderStudentsTable("");
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;color:#c0392b'>Connection error.</td></tr>";
+    }
+  }
+
+  function renderStudentsTable(filterText) {
+    var tbody = document.getElementById("studentsTbody");
+    var q = (filterText || "").trim().toLowerCase();
+    var filtered = !q ? allStudents : allStudents.filter(function(s) {
+      return (s.regId || "").toLowerCase().indexOf(q) !== -1 ||
+             (s.name || "").toLowerCase().indexOf(q) !== -1 ||
+             (s.sunday_school_class || "").toLowerCase().indexOf(q) !== -1;
+    });
+
+    document.getElementById("studentsCount").textContent =
+      filtered.length + " of " + allStudents.length + " student(s)";
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;color:#888'>No matching students.</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = "";
+    filtered.forEach(function(s) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + (s.regId || "") + "</td>" +
+        "<td>" + (s.name || "") + "</td>" +
+        "<td>" + (s.sunday_school_class || "") + "</td>";
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("studentsModal").addEventListener("click", function(e) {
+    if (e.target === this) closeStudents();
+  });
 
   async function renderUserTable() {
     var tbody = document.getElementById("usersTbody");
