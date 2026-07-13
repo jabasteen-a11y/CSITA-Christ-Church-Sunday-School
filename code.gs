@@ -63,3 +63,35 @@ function doPost(e) {
     sunday_school_class: data.sunday_school_class
   })).setMimeType(ContentService.MimeType.JSON);
 }
+
+// ── NEW: doGet handles read-only queries, e.g. the admin students list ──
+function doGet(e) {
+  var action = e.parameter.action;
+
+  if (action === 'listStudents') {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var allData = sheet.getDataRange().getValues();
+    var students = [];
+
+    for (var i = 1; i < allData.length; i++) {
+      var row = allData[i];
+      if (!row[0]) continue; // skip blank rows
+
+      students.push({
+        regId: row[0],                 // A: Registration ID
+        name: row[2],                  // C: Student Name
+        sunday_school_class: row[14]   // O: Class
+      });
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      result: 'success',
+      students: students
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    result: 'error',
+    message: 'Unknown or missing action'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
