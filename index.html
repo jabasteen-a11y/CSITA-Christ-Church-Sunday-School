@@ -7,8 +7,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    #adminModal,#studentsModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
-    #adminModal.open,#studentsModal.open{display:flex}
+    #adminModal,#studentsModal,#editStudentModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
+    .ticker-wrap{width:100%;overflow:hidden;background:rgba(0,0,0,.28);border-top:1px solid rgba(255,255,255,.15);
+      border-bottom:1px solid rgba(255,255,255,.15);padding:10px 0;white-space:nowrap}
+    .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 35s linear infinite}
+    .ticker-item{display:inline-block;padding:0 40px;color:#ffe28b;font-weight:600;font-size:.95rem}
+    @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .ticker-wrap:hover .ticker-track{animation-play-state:paused}
+    #adminModal.open,#studentsModal.open,#editStudentModal.open{display:flex}
     .modal-box{background:#fff;color:#222;border-radius:18px;width:580px;max-width:95vw;max-height:90vh;
       overflow-y:auto;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
     .modal-box h2{margin-bottom:20px;color:#003366;font-size:20px}
@@ -61,6 +67,12 @@
   <p><em>"Train up a child in the way he should go; and when he is old, he will not depart from it."</em><br><strong>Proverbs 22:6</strong></p>
   <button onclick="document.getElementById('regForm').scrollIntoView({behavior:'smooth'})">Register Student</button>
 </section>
+
+<div class="ticker-wrap">
+  <div class="ticker-track" id="eventsTicker">
+    <span class="ticker-item">📢 Loading upcoming events...</span>
+  </div>
+</div>
 
 <div class="container">
   <div id="status-banner" style="display:none" class="card"></div>
@@ -183,9 +195,54 @@
       oninput="renderStudentsTable(this.value)">
     <div id="studentsCount" style="font-size:13px;color:#666;margin-bottom:10px"></div>
     <table>
-      <thead><tr><th>Registration ID</th><th>Name</th><th>Class</th></tr></thead>
+      <thead><tr><th>Registration ID</th><th>Name</th><th>Class</th><th>Action</th></tr></thead>
       <tbody id="studentsTbody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- Admin: Edit Student Modal -->
+<div id="editStudentModal">
+  <div class="modal-box" style="width:600px;max-height:85vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeEditStudent()">✕</button>
+    <h2>✏️ Edit Student</h2>
+    <div style="font-size:13px;color:#666;margin-bottom:16px">
+      Registration ID: <strong id="editRegIdLabel"></strong> (fixed, cannot be changed)
+    </div>
+    <input type="hidden" id="edit_regId">
+    <div class="grid">
+      <div><label>Student Name</label><input id="edit_student_name"></div>
+      <div><label>Date of Birth</label><input type="date" id="edit_dob"></div>
+      <div><label>Gender</label>
+        <select id="edit_gender"><option>Male</option><option>Female</option></select>
+      </div>
+      <div><label>School Standard</label><input id="edit_school_standard"></div>
+      <div><label>School Name</label><input id="edit_school_name"></div>
+      <div><label>Address</label><input id="edit_address"></div>
+      <div><label>Father Name</label><input id="edit_father_name"></div>
+      <div><label>Father Profession</label><input id="edit_father_profession"></div>
+      <div><label>Father Contact</label><input id="edit_father_contact"></div>
+      <div><label>Mother Name</label><input id="edit_mother_name"></div>
+      <div><label>Mother Profession</label><input id="edit_mother_profession"></div>
+      <div><label>Mother Contact</label><input id="edit_mother_contact"></div>
+      <div><label>Sunday School Class</label>
+        <select id="edit_sunday_school_class">
+          <option>Tiny Tots (Pre-Beginners)</option><option>Beginners</option>
+          <option>Primary Boys</option><option>Primary Girls</option>
+          <option>Junior Boys</option><option>Junior Girls</option>
+          <option>Inter-Boys</option><option>Inter-Girls</option>
+          <option>Senior Boys</option><option>Senior Girls-A</option><option>Senior Girls-B</option>
+        </select>
+      </div>
+      <div><label>Academic Year</label><input id="edit_academic_year"></div>
+      <div><label>Teacher Name</label><input id="edit_teacher_name"></div>
+      <div><label>Remarks</label><input id="edit_remarks"></div>
+    </div>
+    <div class="buttons">
+      <button class="primary btn" id="saveEditBtn" onclick="saveStudentEdit()">💾 Save Changes</button>
+      <button class="secondary btn" onclick="closeEditStudent()">Cancel</button>
+    </div>
+    <div id="editStudentMsg" style="display:none;margin-top:14px;padding:12px;border-radius:10px;text-align:center;font-weight:600"></div>
   </div>
 </div>
 
@@ -252,6 +309,38 @@
     document.getElementById("adminModal").classList.remove("open");
   }
 
+  // ── Upcoming Events ticker ──────────────────────────────────────
+  const EVENTS_SCRIPT_URL = "PASTE_YOUR_EVENTS_SCRIPT_URL_HERE";
+
+  async function loadEvents() {
+    const track = document.getElementById("eventsTicker");
+    try {
+      const res = await fetch(EVENTS_SCRIPT_URL + "?action=listEvents");
+      const data = await res.json();
+
+      if (!data.result || data.result !== "success" || !data.events || data.events.length === 0) {
+        track.innerHTML = "<span class='ticker-item'>📢 No upcoming events at the moment.</span>";
+        return;
+      }
+
+      let text = "📢 Upcoming Events: ";
+      data.events.forEach(function(ev, i) {
+        text += ev.name + " — " + ev.date;
+        if (i < data.events.length - 1) text += " &nbsp;|&nbsp; ";
+      });
+
+      // Duplicate the content so the scroll loop is seamless
+      track.innerHTML =
+        "<span class='ticker-item'>" + text + "</span>" +
+        "<span class='ticker-item' aria-hidden='true'>" + text + "</span>";
+    } catch (err) {
+      console.error("Events load error:", err);
+      track.innerHTML = "<span class='ticker-item'>📢 Could not load events.</span>";
+    }
+  }
+
+  loadEvents();
+
   // ── Registered Students modal ───────────────────────────────────
   var allStudents = [];
 
@@ -298,23 +387,108 @@
       filtered.length + " of " + allStudents.length + " student(s)";
 
     if (filtered.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;color:#888'>No matching students.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#888'>No matching students.</td></tr>";
       return;
     }
 
     tbody.innerHTML = "";
     filtered.forEach(function(s) {
       var tr = document.createElement("tr");
+      var editBtn = document.createElement("button");
+      editBtn.textContent = "✏️ Edit";
+      editBtn.className = "btn secondary";
+      editBtn.style.padding = "6px 14px";
+      editBtn.style.fontSize = "13px";
+      editBtn.onclick = function() { openEditStudent(s.regId); };
+
       tr.innerHTML =
         "<td>" + (s.regId || "") + "</td>" +
         "<td>" + (s.name || "") + "</td>" +
-        "<td>" + (s.sunday_school_class || "") + "</td>";
+        "<td>" + (s.sunday_school_class || "") + "</td>" +
+        "<td></td>";
+      tr.querySelector("td:last-child").appendChild(editBtn);
       tbody.appendChild(tr);
     });
   }
 
   document.getElementById("studentsModal").addEventListener("click", function(e) {
     if (e.target === this) closeStudents();
+  });
+
+  // ── Edit Student ─────────────────────────────────────────────
+  var editFieldIds = [
+    "student_name","dob","gender","school_standard","school_name","address",
+    "father_name","father_profession","father_contact",
+    "mother_name","mother_profession","mother_contact",
+    "sunday_school_class","academic_year","teacher_name","remarks"
+  ];
+
+  function openEditStudent(regId) {
+    var s = allStudents.find(function(x) { return x.regId === regId; });
+    if (!s) return;
+
+    document.getElementById("edit_regId").value = s.regId;
+    document.getElementById("editRegIdLabel").textContent = s.regId;
+    editFieldIds.forEach(function(field) {
+      var el = document.getElementById("edit_" + field);
+      if (el) el.value = s[field] || "";
+    });
+
+    document.getElementById("editStudentMsg").style.display = "none";
+    document.getElementById("editStudentModal").classList.add("open");
+  }
+
+  function closeEditStudent() {
+    document.getElementById("editStudentModal").classList.remove("open");
+  }
+
+  async function saveStudentEdit() {
+    var btn = document.getElementById("saveEditBtn");
+    var msg = document.getElementById("editStudentMsg");
+    btn.disabled = true;
+    btn.textContent = "⏳ Saving...";
+
+    var payload = { action: "updateStudent", regId: document.getElementById("edit_regId").value };
+    editFieldIds.forEach(function(field) {
+      var el = document.getElementById("edit_" + field);
+      payload[field] = el ? el.value.trim() : "";
+    });
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.result === "success") {
+        msg.textContent = "✅ Student updated successfully.";
+        msg.style.background = "#e6f9ee";
+        msg.style.color = "#1a7a3b";
+        msg.style.display = "block";
+        await loadStudents(); // refresh list with latest data
+        setTimeout(closeEditStudent, 1200);
+      } else {
+        msg.textContent = "❌ " + (data.message || "Update failed.");
+        msg.style.background = "#fdecea";
+        msg.style.color = "#b71c1c";
+        msg.style.display = "block";
+      }
+    } catch (err) {
+      console.error(err);
+      msg.textContent = "❌ Connection error while saving.";
+      msg.style.background = "#fdecea";
+      msg.style.color = "#b71c1c";
+      msg.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "💾 Save Changes";
+    }
+  }
+
+  document.getElementById("editStudentModal").addEventListener("click", function(e) {
+    if (e.target === this) closeEditStudent();
   });
 
   async function renderUserTable() {
