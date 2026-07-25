@@ -380,7 +380,7 @@
     var q = (filterText || "").trim().toLowerCase();
     var filtered = !q ? allStudents : allStudents.filter(function(s) {
       return (s.regId || "").toLowerCase().indexOf(q) !== -1 ||
-             (s.name || "").toLowerCase().indexOf(q) !== -1 ||
+             (s.student_name || "").toLowerCase().indexOf(q) !== -1 ||
              (s.sunday_school_class || "").toLowerCase().indexOf(q) !== -1;
     });
 
@@ -404,7 +404,7 @@
 
       tr.innerHTML =
         "<td>" + (s.regId || "") + "</td>" +
-        "<td>" + (s.name || "") + "</td>" +
+        "<td>" + (s.student_name || "") + "</td>" +
         "<td>" + (s.sunday_school_class || "") + "</td>" +
         "<td></td>";
       tr.querySelector("td:last-child").appendChild(editBtn);
