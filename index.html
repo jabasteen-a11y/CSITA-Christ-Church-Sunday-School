@@ -19,6 +19,8 @@
       overflow-y:auto;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
     .modal-box h2{margin-bottom:20px;color:#003366;font-size:20px}
     .modal-box table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:14px}
+    #studentsModal .modal-box table th:last-child,
+    #studentsModal .modal-box table td:last-child{width:1%;white-space:nowrap}
     .modal-box th{background:#003366;color:#fff;padding:10px 12px;text-align:left}
     .modal-box td{padding:9px 12px;border-bottom:1px solid #eee;color:#333}
     .modal-box tr:hover td{background:#f5f8ff}
@@ -197,7 +199,7 @@
 
 <!-- Admin: Registered Students Modal -->
 <div id="studentsModal">
-  <div class="modal-box" style="width:650px">
+  <div class="modal-box" style="width:720px">
     <button class="modal-close" onclick="closeStudents()">✕</button>
     <h2>📋 Registered Students</h2>
     <input type="text" id="studentSearch" placeholder="🔍 Search by name, class, or registration ID..."
@@ -457,18 +459,63 @@
       var editBtn = document.createElement("button");
       editBtn.textContent = "✏️ Edit";
       editBtn.className = "btn secondary";
-      editBtn.style.padding = "6px 14px";
+      editBtn.style.padding = "6px 12px";
       editBtn.style.fontSize = "13px";
+      editBtn.style.whiteSpace = "nowrap";
       editBtn.onclick = function() { openEditStudent(s.regId); };
+
+      var delBtn = document.createElement("button");
+      delBtn.textContent = "🗑️ Delete";
+      delBtn.className = "btn secondary";
+      delBtn.style.padding = "6px 12px";
+      delBtn.style.fontSize = "13px";
+      delBtn.style.whiteSpace = "nowrap";
+      delBtn.style.color = "#c0392b";
+      delBtn.onclick = function() { deleteStudent(s.regId, s.student_name); };
 
       tr.innerHTML =
         "<td>" + (s.regId || "") + "</td>" +
         "<td>" + (s.student_name || "") + "</td>" +
         "<td>" + (s.sunday_school_class || "") + "</td>" +
         "<td></td>";
-      tr.querySelector("td:last-child").appendChild(editBtn);
+      var actionCell = tr.querySelector("td:last-child");
+      actionCell.style.whiteSpace = "nowrap";
+
+      var actionWrap = document.createElement("div");
+      actionWrap.style.display = "flex";
+      actionWrap.style.flexDirection = "row";
+      actionWrap.style.flexWrap = "nowrap";
+      actionWrap.style.gap = "8px";
+
+      actionWrap.appendChild(editBtn);
+      actionWrap.appendChild(delBtn);
+      actionCell.appendChild(actionWrap);
       tbody.appendChild(tr);
     });
+  }
+
+  async function deleteStudent(regId, studentName) {
+    if (!confirm("Delete " + (studentName || "this student") + " (" + regId + ")?\nThis cannot be undone and will remove the entry from the Google Sheet as well.")) return;
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "deleteStudent", regId: regId })
+      });
+      const data = await res.json();
+
+      if (data.result === "success") {
+        // Remove locally so the table updates instantly without a full reload
+        allStudents = allStudents.filter(function(s) { return s.regId !== regId; });
+        renderStudentsTable(document.getElementById("studentSearch").value);
+      } else {
+        alert("❌ " + (data.message || "Could not delete student."));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Connection error while deleting.");
+    }
   }
 
   document.getElementById("studentsModal").addEventListener("click", function(e) {
