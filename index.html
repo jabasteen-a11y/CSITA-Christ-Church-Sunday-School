@@ -6,6 +6,8 @@
   <title>CSITA Christ Church Sunday School Management System</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     #adminModal,#studentsModal,#editStudentModal,#harvestModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
     .ticker-wrap{width:100%;overflow:hidden;background:rgba(0,0,0,.28);border-top:1px solid rgba(255,255,255,.15);
@@ -211,6 +213,9 @@
       <thead><tr><th>Registration ID</th><th>Name</th><th>Class</th><th>Action</th></tr></thead>
       <tbody id="studentsTbody"></tbody>
     </table>
+    <div style="text-align:center;margin-top:-6px">
+      <button class="btn primary" id="downloadPdfBtn" onclick="downloadStudentsPDF()">📄 Download PDF (Class-wise)</button>
+    </div>
   </div>
 </div>
 
@@ -492,6 +497,125 @@
       actionCell.appendChild(actionWrap);
       tbody.appendChild(tr);
     });
+  }
+
+  // ── Download class-wise PDF of registered students ────────────
+  var CLASS_ORDER = [
+    'Tiny Tots (Pre-Beginners)',
+    'Beginners',
+    'Primary Boys',
+    'Primary Girls',
+    'Junior Boys',
+    'Junior Girls',
+    'Inter-Boys',
+    'Inter-Girls',
+    'Senior Boys',
+    'Senior Girls-A',
+    'Senior Girls-B'
+  ];
+
+  function downloadStudentsPDF() {
+    if (!allStudents || allStudents.length === 0) {
+      alert("No student data loaded yet. Please wait for the list to finish loading.");
+      return;
+    }
+
+    var btn = document.getElementById("downloadPdfBtn");
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Preparing PDF...";
+
+    try {
+      var jsPDFCtor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+      var doc = new jsPDFCtor({ orientation: "portrait", unit: "pt", format: "a4" });
+
+      // Group students by class
+      var groups = {};
+      allStudents.forEach(function(s) {
+        var cls = s.sunday_school_class || "Unassigned";
+        if (!groups[cls]) groups[cls] = [];
+        groups[cls].push(s);
+      });
+
+      // Build ordered class list: known classes first (in CLASS_ORDER),
+      // then any others found in the data, sorted alphabetically.
+      var knownClasses = CLASS_ORDER.filter(function(c) { return groups[c]; });
+      var extraClasses = Object.keys(groups)
+        .filter(function(c) { return CLASS_ORDER.indexOf(c) === -1; })
+        .sort();
+      var orderedClasses = knownClasses.concat(extraClasses);
+
+      var pageWidth = doc.internal.pageSize.getWidth();
+      var marginX = 40;
+      var y = 50;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("CSITA Christ Church Sunday School", pageWidth / 2, y, { align: "center" });
+      y += 20;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text("Registered Students - Class-wise List", pageWidth / 2, y, { align: "center" });
+      y += 16;
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      var generatedOn = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      doc.text("Generated on " + generatedOn + "  |  Total students: " + allStudents.length, pageWidth / 2, y, { align: "center" });
+      doc.setTextColor(0);
+      y += 20;
+
+      orderedClasses.forEach(function(cls, idx) {
+        var students = groups[cls];
+
+        if (idx > 0) y += 10;
+
+        // Add page break if not enough room for a heading + at least one row
+        if (y > doc.internal.pageSize.getHeight() - 100) {
+          doc.addPage();
+          y = 50;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(11, 60, 122);
+        doc.text(cls + " (" + students.length + ")", marginX, y);
+        doc.setTextColor(0);
+        y += 8;
+
+        var rows = students.map(function(s, i) {
+          return [
+            i + 1,
+            s.regId || "",
+            s.student_name || "",
+            s.gender || "",
+            s.school_standard || "",
+            s.teacher_name || ""
+          ];
+        });
+
+        doc.autoTable({
+          startY: y,
+          margin: { left: marginX, right: marginX },
+          head: [["#", "Registration ID", "Name", "Gender", "Standard", "Teacher"]],
+          body: rows,
+          theme: "grid",
+          styles: { font: "helvetica", fontSize: 9, cellPadding: 4 },
+          headStyles: { fillColor: [11, 60, 122], textColor: 255, fontStyle: "bold" },
+          columnStyles: { 0: { cellWidth: 24 } }
+        });
+
+        y = doc.lastAutoTable.finalY + 10;
+      });
+
+      var dateStamp = new Date().toISOString().slice(0, 10);
+      doc.save("CSITA_Sunday_School_Students_" + dateStamp + ".pdf");
+
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      alert("⚠️ Could not generate PDF. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "📄 Download PDF (Class-wise)";
+    }
   }
 
   async function deleteStudent(regId, studentName) {
