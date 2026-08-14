@@ -266,7 +266,7 @@
 
 <!-- Harvest Festival 2026: Register for Competitions -->
 <div id="harvestModal">
-  <div class="modal-box" style="width:800px;max-height:85vh;overflow-y:auto">
+  <div class="modal-box" style="width:1050px;max-width:96vw;max-height:85vh;overflow-y:auto">
     <button class="modal-close" onclick="closeHarvest()">✕</button>
     <h2>🌾 Harvest Festival - 2026</h2>
     <div style="font-size:14px;color:#666;margin-bottom:16px">Register for Competitions</div>
@@ -288,19 +288,22 @@
     </select>
 
     <div id="harvestRosterArea" style="margin-top:20px;display:none">
-      <table>
+      <div style="overflow-x:auto">
+      <table style="min-width:920px">
         <thead>
           <tr>
-            <th>Reg ID</th>
-            <th>Name</th>
-            <th>Standard</th>
-            <th>🎨 Drawing</th>
-            <th>🎤 Solo Singing</th>
-            <th>📖 Memory Verse</th>
+            <th style="white-space:nowrap;min-width:120px">Reg ID</th>
+            <th style="white-space:nowrap;min-width:150px">Name</th>
+            <th style="white-space:nowrap">Standard</th>
+            <th style="white-space:nowrap">🎨 Drawing</th>
+            <th style="white-space:nowrap">🎤 Solo Singing</th>
+            <th style="white-space:nowrap">📖 Memory Verse</th>
+            <th style="white-space:nowrap">🏷️ Category</th>
           </tr>
         </thead>
         <tbody id="harvestTbody"></tbody>
       </table>
+      </div>
 
       <div style="margin-top:18px;text-align:center">
         <button class="btn primary" id="harvestSaveBtn" onclick="saveHarvestRegistrations()">💾 Save Registrations</button>
@@ -724,7 +727,18 @@
 
   // ── Harvest Festival 2026: Register for Competitions ───────────
   const HARVEST_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8jZ_8GfheZZ7BnFgBzTWTNwCTKC-MdPVsiqRd5IOsnX15HGJTJBOWsCc16vFcK_I-oQ/exec";
-  var currentHarvestRoster = []; // [{regId, student_name, drawing, solo_singing, memory_verse}]
+  var currentHarvestRoster = [];
+
+  var HARVEST_CATEGORIES = [
+    "Category 1 - Pre-KG",
+    "Category 2 - LKG-UKG",
+    "Category 3 - I Std - II Std",
+    "Category 4 - III Std - IV Std",
+    "Category 5 - V Std - VI Std",
+    "Category 6 - VII Std - VIII Std",
+    "Category 7 - IX Std - X Std",
+    "Category 8 - XI Std - XII Std"
+  ]; // [{regId, student_name, drawing, solo_singing, memory_verse}]
 
   function openHarvest(e) {
     e.preventDefault();
@@ -786,7 +800,8 @@
           school_standard: s.school_standard || "",
           drawing: prev.drawing === "Yes" ? "Yes" : (prev.drawing === "No" ? "No" : ""),
           solo_singing: prev.solo_singing === "Yes" ? "Yes" : (prev.solo_singing === "No" ? "No" : ""),
-          memory_verse: prev.memory_verse === "Yes" ? "Yes" : (prev.memory_verse === "No" ? "No" : "")
+          memory_verse: prev.memory_verse === "Yes" ? "Yes" : (prev.memory_verse === "No" ? "No" : ""),
+          category: HARVEST_CATEGORIES.indexOf(prev.category) !== -1 ? prev.category : ""
         };
       });
 
@@ -808,14 +823,25 @@
     currentHarvestRoster.forEach(function(student, idx) {
       var tr = document.createElement("tr");
       tr.innerHTML =
-        "<td>" + student.regId + "</td>" +
-        "<td>" + student.student_name + "</td>" +
+        "<td style='white-space:nowrap'>" + student.regId + "</td>" +
+        "<td style='white-space:nowrap'>" + student.student_name + "</td>" +
         "<td>" + (student.school_standard || "") + "</td>" +
         "<td>" + harvestYnGroup(idx, "drawing", student.drawing) + "</td>" +
         "<td>" + harvestYnGroup(idx, "solo_singing", student.solo_singing) + "</td>" +
-        "<td>" + harvestYnGroup(idx, "memory_verse", student.memory_verse) + "</td>";
+        "<td>" + harvestYnGroup(idx, "memory_verse", student.memory_verse) + "</td>" +
+        "<td>" + harvestCategorySelect(idx, student.category) + "</td>";
       tbody.appendChild(tr);
     });
+  }
+
+  function harvestCategorySelect(idx, value) {
+    var html = "<select onchange='setHarvestChoice(" + idx + ",\"category\",this.value)' style='min-width:190px;padding:8px 10px;font-size:13px'>";
+    html += "<option value=''" + (value === "" ? " selected" : "") + ">-- Select --</option>";
+    HARVEST_CATEGORIES.forEach(function(cat) {
+      html += "<option value='" + cat + "'" + (value === cat ? " selected" : "") + ">" + cat + "</option>";
+    });
+    html += "</select>";
+    return html;
   }
 
   function harvestYnGroup(idx, field, value) {
@@ -843,7 +869,7 @@
 
     var entries = currentHarvestRoster
       .filter(function(s) {
-        return s.drawing !== "" || s.solo_singing !== "" || s.memory_verse !== "";
+        return s.drawing !== "" || s.solo_singing !== "" || s.memory_verse !== "" || s.category !== "";
       })
       .map(function(s) {
         return {
@@ -853,7 +879,8 @@
           school_standard: s.school_standard,
           drawing: s.drawing,
           solo_singing: s.solo_singing,
-          memory_verse: s.memory_verse
+          memory_verse: s.memory_verse,
+          category: s.category
         };
       });
 
