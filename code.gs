@@ -14,6 +14,9 @@ function doPost(e) {
   if (data.action === 'deleteStudent') {
     return handleDeleteStudent(sheet, data);
   }
+  if (data.action === 'saveAttendance') {
+    return handleSaveAttendance(data);
+  }
   return handleNewRegistration(sheet, data);
 }
 
@@ -183,7 +186,7 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // ── Used by the Harvest Festival competition registration page ──
+  // ── Used by the Attendance module to load a class roster ──
   if (action === 'listByClass') {
     var className = e.parameter.class;
     var sheet2 = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -208,6 +211,11 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ── Attendance already saved for one class on one date ──
+  if (action === 'getAttendance') {
+    return handleGetAttendance(e.parameter.class, e.parameter.date);
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     result: 'error',
     message: 'Unknown or missing action'
@@ -221,4 +229,112 @@ function formatDobForField(value) {
     return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
   return value;
+}
+
+// ══════════════════════════════════════════════════════════════
+// ATTENDANCE MODULE
+// Sheet "Attendance" columns:
+// A date (yyyy-MM-dd, plain text) | B regId | C student_name
+// D sunday_school_class | E status (Present/Absent)
+// F marked_by | G timestamp
+// One row per student per date; saving again for the same date updates it.
+// ══════════════════════════════════════════════════════════════
+var ATTENDANCE_SHEET_NAME = 'Attendance';
+
+function getAttendanceSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(ATTENDANCE_SHEET_NAME);
+  if (sh) return sh;
+
+  // The student handlers above rely on getActiveSheet(), and insertSheet()
+  // makes the new tab active, so put the original tab back afterwards.
+  var previous = ss.getActiveSheet();
+  sh = ss.insertSheet(ATTENDANCE_SHEET_NAME);
+  sh.appendRow(['Date', 'Reg ID', 'Student Name', 'Class', 'Status', 'Marked By', 'Timestamp']);
+  sh.getRange('A:A').setNumberFormat('@'); // keep dates as plain yyyy-MM-dd text
+  sh.setFrozenRows(1);
+  ss.setActiveSheet(previous);
+  return sh;
+}
+
+// A date cell may come back as a Date object if someone edited it by hand.
+function attDateToString(value) {
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(value);
+}
+
+function handleSaveAttendance(data) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000); // avoid two teachers writing at the same moment
+
+  try {
+    var dateStr = String(data.date || '');
+    var entries = data.entries || [];
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || entries.length === 0) {
+      return jsonOut({ result: 'error', message: 'A date and at least one student are required.' });
+    }
+
+    var sh = getAttendanceSheet();
+    var allData = sh.getDataRange().getValues();
+
+    // Existing rows for this date, keyed by regId -> sheet row number
+    var rowByRegId = {};
+    for (var i = 1; i < allData.length; i++) {
+      if (attDateToString(allData[i][0]) === dateStr) {
+        rowByRegId[allData[i][1]] = i + 1;
+      }
+    }
+
+    var now = new Date();
+    var newRows = [];
+    var saved = 0;
+
+    entries.forEach(function(en) {
+      if (en.status !== 'Present' && en.status !== 'Absent') return;
+      var rowValues = [
+        dateStr, en.regId, en.student_name, data.sunday_school_class,
+        en.status, data.marked_by || '', now
+      ];
+      var existingRow = rowByRegId[en.regId];
+      if (existingRow) {
+        sh.getRange(existingRow, 1, 1, 7).setValues([rowValues]);
+      } else {
+        newRows.push(rowValues);
+      }
+      saved++;
+    });
+
+    if (newRows.length > 0) {
+      var startRow = sh.getLastRow() + 1;
+      sh.getRange(startRow, 1, newRows.length, 7).setValues(newRows);
+    }
+
+    return jsonOut({ result: 'success', saved: saved });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function handleGetAttendance(className, dateStr) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ATTENDANCE_SHEET_NAME);
+  var records = {};
+
+  if (sh) {
+    var allData = sh.getDataRange().getValues();
+    for (var i = 1; i < allData.length; i++) {
+      if (attDateToString(allData[i][0]) === dateStr && allData[i][3] === className) {
+        records[allData[i][1]] = allData[i][4];
+      }
+    }
+  }
+
+  return jsonOut({ result: 'success', records: records });
+}
+
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }

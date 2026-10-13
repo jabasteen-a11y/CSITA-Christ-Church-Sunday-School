@@ -9,14 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
-    #adminModal,#studentsModal,#editStudentModal,#harvestModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
+    #adminModal,#studentsModal,#editStudentModal,#attendanceModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center}
     .ticker-wrap{width:100%;overflow:hidden;background:rgba(0,0,0,.28);border-top:1px solid rgba(255,255,255,.15);
       border-bottom:1px solid rgba(255,255,255,.15);padding:10px 0;white-space:nowrap}
     .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 35s linear infinite}
     .ticker-item{display:inline-block;padding:0 40px;color:#ffe28b;font-weight:600;font-size:.95rem}
     @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     .ticker-wrap:hover .ticker-track{animation-play-state:paused}
-    #adminModal.open,#studentsModal.open,#editStudentModal.open,#harvestModal.open{display:flex}
+    #adminModal.open,#studentsModal.open,#editStudentModal.open,#attendanceModal.open{display:flex}
     .modal-box{background:#fff;color:#222;border-radius:18px;width:580px;max-width:95vw;max-height:90vh;
       overflow-y:auto;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
     .modal-box h2{margin-bottom:20px;color:#003366;font-size:20px}
@@ -65,7 +65,7 @@
     <span id="userBadge"></span>
     <a href="#">Home</a>
     <a href="#regForm">Registration</a>
-    <a href="#" onclick="openHarvest(event)">🌾 Harvest Festival - 2026</a>
+    <a href="#" onclick="openAttendance(event)">✅ Attendance</a>
     <a href="#" id="studentsLink" style="display:none" onclick="openStudents(event)">📋 View Students</a>
     <a href="#" id="adminLink" style="display:none" onclick="openAdmin(event)">👥 Manage Users</a>
     <a href="#" onclick="logout()">Logout</a>
@@ -264,55 +264,63 @@
   </div>
 </div>
 
-<!-- Harvest Festival 2026: Register for Competitions -->
-<div id="harvestModal">
-  <div class="modal-box" style="width:1050px;max-width:96vw;max-height:85vh;overflow-y:auto">
-    <button class="modal-close" onclick="closeHarvest()">✕</button>
-    <h2>🌾 Harvest Festival - 2026</h2>
-    <div style="font-size:14px;color:#666;margin-bottom:16px">Register for Competitions</div>
+<!-- Attendance module -->
+<div id="attendanceModal">
+  <div class="modal-box" style="width:720px;max-width:96vw;max-height:85vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeAttendance()">✕</button>
+    <h2>✅ Attendance</h2>
+    <div style="font-size:14px;color:#666;margin-bottom:16px">Mark Sunday School attendance by class and date</div>
 
-    <label>Select Class</label>
-    <select id="harvestClassSelect" onchange="loadHarvestClass()">
-      <option value="">-- Choose a class --</option>
-      <option>Tiny Tots (Pre-Beginners)</option>
-      <option>Beginners</option>
-      <option>Primary Boys</option>
-      <option>Primary Girls</option>
-      <option>Junior Boys</option>
-      <option>Junior Girls</option>
-      <option>Inter-Boys</option>
-      <option>Inter-Girls</option>
-      <option>Senior Boys</option>
-      <option>Senior Girls-A</option>
-      <option>Senior Girls-B</option>
-    </select>
+    <div class="form-row">
+      <div>
+        <label>Select Class</label>
+        <select id="attClassSelect" onchange="loadAttendance()">
+          <option value="">-- Choose a class --</option>
+          <option>Tiny Tots (Pre-Beginners)</option>
+          <option>Beginners</option>
+          <option>Primary Boys</option>
+          <option>Primary Girls</option>
+          <option>Junior Boys</option>
+          <option>Junior Girls</option>
+          <option>Inter-Boys</option>
+          <option>Inter-Girls</option>
+          <option>Senior Boys</option>
+          <option>Senior Girls-A</option>
+          <option>Senior Girls-B</option>
+        </select>
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="date" id="attDate" onchange="loadAttendance()" style="width:100%;padding:10px 12px;border-radius:8px;font-size:14px">
+      </div>
+    </div>
 
-    <div id="harvestRosterArea" style="margin-top:20px;display:none">
+    <div id="attRosterArea" style="margin-top:20px;display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div id="attSummary" style="font-size:14px;font-weight:600;color:#003366"></div>
+        <button type="button" class="btn-add" onclick="markAllPresent()">Mark all Present</button>
+      </div>
       <div style="overflow-x:auto">
-      <table style="min-width:920px">
+      <table style="min-width:480px">
         <thead>
           <tr>
             <th style="white-space:nowrap;min-width:120px">Reg ID</th>
             <th style="white-space:nowrap;min-width:150px">Name</th>
-            <th style="white-space:nowrap">Standard</th>
-            <th style="white-space:nowrap">🎨 Drawing</th>
-            <th style="white-space:nowrap">🎤 Solo Singing</th>
-            <th style="white-space:nowrap">📖 Memory Verse</th>
-            <th style="white-space:nowrap">🏷️ Category</th>
+            <th style="white-space:nowrap">Attendance</th>
           </tr>
         </thead>
-        <tbody id="harvestTbody"></tbody>
+        <tbody id="attTbody"></tbody>
       </table>
       </div>
 
       <div style="margin-top:18px;text-align:center">
-        <button class="btn primary" id="harvestSaveBtn" onclick="saveHarvestRegistrations()">💾 Save Registrations</button>
-        <div id="harvestSaveMsg" style="margin-top:10px;font-weight:600"></div>
+        <button class="btn primary" id="attSaveBtn" onclick="saveAttendance()">💾 Save Attendance</button>
+        <div id="attSaveMsg" style="margin-top:10px;font-weight:600"></div>
       </div>
     </div>
 
-    <div id="harvestEmptyMsg" style="display:none;color:#b71c1c;margin-top:20px">No students found in this class yet.</div>
-    <div id="harvestLoadingMsg" style="display:none;color:#666;margin-top:20px">Loading...</div>
+    <div id="attEmptyMsg" style="display:none;color:#b71c1c;margin-top:20px">No students found in this class yet.</div>
+    <div id="attLoadingMsg" style="display:none;color:#666;margin-top:20px">Loading...</div>
   </div>
 </div>
 
@@ -725,87 +733,94 @@
     if (e.target === this) closeEditStudent();
   });
 
-  // ── Harvest Festival 2026: Register for Competitions ───────────
-  const HARVEST_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8jZ_8GfheZZ7BnFgBzTWTNwCTKC-MdPVsiqRd5IOsnX15HGJTJBOWsCc16vFcK_I-oQ/exec";
-  var currentHarvestRoster = [];
+  // ── Attendance module ──────────────────────────────────────────
+  // Uses the students script (SCRIPT_URL): listByClass for the roster,
+  // getAttendance / saveAttendance for the "Attendance" sheet.
+  var currentAttRoster = []; // [{regId, student_name, status: "Present" | "Absent" | ""}]
 
-  var HARVEST_CATEGORIES = [
-    "Category 1 - Pre-KG",
-    "Category 2 - LKG-UKG",
-    "Category 3 - I Std - II Std",
-    "Category 4 - III Std - IV Std",
-    "Category 5 - V Std - VI Std",
-    "Category 6 - VII Std - VIII Std",
-    "Category 7 - IX Std - X Std",
-    "Category 8 - XI Std - XII Std"
-  ]; // [{regId, student_name, drawing, solo_singing, memory_verse}]
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
 
-  function openHarvest(e) {
+  function escHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function openAttendance(e) {
     e.preventDefault();
-    document.getElementById("harvestModal").classList.add("open");
-    document.getElementById("harvestClassSelect").value = "";
-    document.getElementById("harvestRosterArea").style.display = "none";
-    document.getElementById("harvestEmptyMsg").style.display = "none";
-    document.getElementById("harvestSaveMsg").textContent = "";
+    document.getElementById("attendanceModal").classList.add("open");
+    document.getElementById("attClassSelect").value = "";
+    document.getElementById("attDate").value = todayISO();
+    document.getElementById("attRosterArea").style.display = "none";
+    document.getElementById("attEmptyMsg").style.display = "none";
+    document.getElementById("attSaveMsg").textContent = "";
   }
 
-  function closeHarvest() {
-    document.getElementById("harvestModal").classList.remove("open");
+  function closeAttendance() {
+    document.getElementById("attendanceModal").classList.remove("open");
   }
 
-  document.getElementById("harvestModal").addEventListener("click", function(e) {
-    if (e.target === this) closeHarvest();
+  document.getElementById("attendanceModal").addEventListener("click", function(e) {
+    if (e.target === this) closeAttendance();
   });
 
-  async function loadHarvestClass() {
-    var className = document.getElementById("harvestClassSelect").value;
-    var rosterArea = document.getElementById("harvestRosterArea");
-    var emptyMsg = document.getElementById("harvestEmptyMsg");
-    var loadingMsg = document.getElementById("harvestLoadingMsg");
+  async function loadAttendance() {
+    var className = document.getElementById("attClassSelect").value;
+    var dateStr = document.getElementById("attDate").value;
+    var rosterArea = document.getElementById("attRosterArea");
+    var emptyMsg = document.getElementById("attEmptyMsg");
+    var loadingMsg = document.getElementById("attLoadingMsg");
 
     rosterArea.style.display = "none";
     emptyMsg.style.display = "none";
-    document.getElementById("harvestSaveMsg").textContent = "";
+    document.getElementById("attSaveMsg").textContent = "";
 
-    if (!className) return;
+    if (!className || !dateStr) return;
 
     loadingMsg.style.display = "block";
 
     try {
-      // 1. Roster for this class (reuses the same students script)
+      // 1. Roster for this class
       const rosterRes = await fetch(SCRIPT_URL + "?action=listByClass&class=" + encodeURIComponent(className));
       const rosterData = await rosterRes.json();
 
-      if (!rosterData.result || rosterData.result !== "success" || !rosterData.students || rosterData.students.length === 0) {
+      if (rosterData.result !== "success" || !rosterData.students || rosterData.students.length === 0) {
         loadingMsg.style.display = "none";
+        emptyMsg.textContent = "No students found in this class yet.";
         emptyMsg.style.display = "block";
         return;
       }
 
-      // 2. Existing saved selections for this class, if any
+      // 2. Attendance already saved for this class + date, if any
       var existing = {};
       try {
-        const regRes = await fetch(HARVEST_SCRIPT_URL + "?action=getClassRegistrations&class=" + encodeURIComponent(className));
-        const regData = await regRes.json();
-        if (regData.result === "success") existing = regData.registrations || {};
-      } catch (e) {
-        console.warn("Could not load existing competition registrations, defaulting to No.");
+        const attRes = await fetch(SCRIPT_URL + "?action=getAttendance&class=" + encodeURIComponent(className) +
+                                   "&date=" + encodeURIComponent(dateStr));
+        const attData = await attRes.json();
+        if (attData.result === "success") existing = attData.records || {};
+      } catch (err) {
+        console.warn("Could not load existing attendance, starting blank.");
       }
 
-      currentHarvestRoster = rosterData.students.map(function(s) {
-        var prev = existing[s.regId] || {};
+      // Ignore the response if the class/date changed while we were loading
+      if (document.getElementById("attClassSelect").value !== className ||
+          document.getElementById("attDate").value !== dateStr) return;
+
+      currentAttRoster = rosterData.students.map(function(s) {
+        var prev = existing[s.regId];
         return {
           regId: s.regId,
           student_name: s.student_name,
-          school_standard: s.school_standard || "",
-          drawing: prev.drawing === "Yes" ? "Yes" : (prev.drawing === "No" ? "No" : ""),
-          solo_singing: prev.solo_singing === "Yes" ? "Yes" : (prev.solo_singing === "No" ? "No" : ""),
-          memory_verse: prev.memory_verse === "Yes" ? "Yes" : (prev.memory_verse === "No" ? "No" : ""),
-          category: HARVEST_CATEGORIES.indexOf(prev.category) !== -1 ? prev.category : ""
+          status: (prev === "Present" || prev === "Absent") ? prev : ""
         };
       });
 
-      renderHarvestRoster();
+      renderAttendanceRoster();
       loadingMsg.style.display = "none";
       rosterArea.style.display = "block";
     } catch (err) {
@@ -816,91 +831,89 @@
     }
   }
 
-  function renderHarvestRoster() {
-    var tbody = document.getElementById("harvestTbody");
+  function renderAttendanceRoster() {
+    var tbody = document.getElementById("attTbody");
     tbody.innerHTML = "";
 
-    currentHarvestRoster.forEach(function(student, idx) {
+    currentAttRoster.forEach(function(student, idx) {
+      var presentActive = student.status === "Present" ? "active" : "";
+      var absentActive = student.status === "Absent" ? "active" : "";
       var tr = document.createElement("tr");
       tr.innerHTML =
-        "<td style='white-space:nowrap'>" + student.regId + "</td>" +
-        "<td style='white-space:nowrap'>" + student.student_name + "</td>" +
-        "<td>" + (student.school_standard || "") + "</td>" +
-        "<td>" + harvestYnGroup(idx, "drawing", student.drawing) + "</td>" +
-        "<td>" + harvestYnGroup(idx, "solo_singing", student.solo_singing) + "</td>" +
-        "<td>" + harvestYnGroup(idx, "memory_verse", student.memory_verse) + "</td>" +
-        "<td>" + harvestCategorySelect(idx, student.category) + "</td>";
+        "<td style='white-space:nowrap'>" + escHtml(student.regId) + "</td>" +
+        "<td style='white-space:nowrap'>" + escHtml(student.student_name) + "</td>" +
+        "<td><div class='yn-group'>" +
+          "<button type='button' class='yn-btn yes " + presentActive + "' onclick='setAttendance(" + idx + ",\"Present\")'>Present</button>" +
+          "<button type='button' class='yn-btn no " + absentActive + "' onclick='setAttendance(" + idx + ",\"Absent\")'>Absent</button>" +
+        "</div></td>";
       tbody.appendChild(tr);
     });
+
+    updateAttendanceSummary();
   }
 
-  function harvestCategorySelect(idx, value) {
-    var html = "<select onchange='setHarvestChoice(" + idx + ",\"category\",this.value)' style='min-width:190px;padding:8px 10px;font-size:13px'>";
-    html += "<option value=''" + (value === "" ? " selected" : "") + ">-- Select --</option>";
-    HARVEST_CATEGORIES.forEach(function(cat) {
-      html += "<option value='" + cat + "'" + (value === cat ? " selected" : "") + ">" + cat + "</option>";
+  function updateAttendanceSummary() {
+    var p = 0, a = 0;
+    currentAttRoster.forEach(function(s) {
+      if (s.status === "Present") p++;
+      else if (s.status === "Absent") a++;
     });
-    html += "</select>";
-    return html;
+    var unmarked = currentAttRoster.length - p - a;
+    document.getElementById("attSummary").textContent =
+      "Present: " + p + "  |  Absent: " + a + "  |  Not marked: " + unmarked + "  (Total " + currentAttRoster.length + ")";
   }
 
-  function harvestYnGroup(idx, field, value) {
-    var yesActive = value === "Yes" ? "active" : "";
-    var noActive = value === "No" ? "active" : "";
-    return "<div class='yn-group'>" +
-      "<button type='button' class='yn-btn yes " + yesActive + "' onclick='setHarvestChoice(" + idx + ",\"" + field + "\",\"Yes\")'>Yes</button>" +
-      "<button type='button' class='yn-btn no " + noActive + "' onclick='setHarvestChoice(" + idx + ",\"" + field + "\",\"No\")'>No</button>" +
-      "</div>";
+  function setAttendance(idx, status) {
+    currentAttRoster[idx].status = status;
+    renderAttendanceRoster();
   }
 
-  function setHarvestChoice(idx, field, value) {
-    currentHarvestRoster[idx][field] = value;
-    renderHarvestRoster();
+  function markAllPresent() {
+    currentAttRoster.forEach(function(s) { s.status = "Present"; });
+    renderAttendanceRoster();
   }
 
-  async function saveHarvestRegistrations() {
-    var btn = document.getElementById("harvestSaveBtn");
-    var msg = document.getElementById("harvestSaveMsg");
-    var className = document.getElementById("harvestClassSelect").value;
+  async function saveAttendance() {
+    var btn = document.getElementById("attSaveBtn");
+    var msg = document.getElementById("attSaveMsg");
+    var className = document.getElementById("attClassSelect").value;
+    var dateStr = document.getElementById("attDate").value;
+
+    var entries = currentAttRoster
+      .filter(function(s) { return s.status !== ""; })
+      .map(function(s) {
+        return { regId: s.regId, student_name: s.student_name, status: s.status };
+      });
+
+    if (entries.length === 0) {
+      msg.style.color = "#b71c1c";
+      msg.textContent = "⚠️ Nothing marked yet — mark at least one student first.";
+      return;
+    }
 
     btn.disabled = true;
     btn.textContent = "⏳ Saving...";
     msg.textContent = "";
 
-    var entries = currentHarvestRoster
-      .filter(function(s) {
-        return s.drawing !== "" || s.solo_singing !== "" || s.memory_verse !== "" || s.category !== "";
-      })
-      .map(function(s) {
-        return {
-          regId: s.regId,
-          student_name: s.student_name,
-          sunday_school_class: className,
-          school_standard: s.school_standard,
-          drawing: s.drawing,
-          solo_singing: s.solo_singing,
-          memory_verse: s.memory_verse,
-          category: s.category
-        };
-      });
-
-    if (entries.length === 0) {
-      msg.style.color = "#b71c1c";
-      msg.textContent = "⚠️ No selections made yet — choose Yes or No for at least one student first.";
-      return;
-    }
-
     try {
-      const res = await fetch(HARVEST_SCRIPT_URL, {
+      const res = await fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "saveCompetitionRegistrations", entries: entries })
+        body: JSON.stringify({
+          action: "saveAttendance",
+          date: dateStr,
+          sunday_school_class: className,
+          marked_by: currentUser.username || "",
+          entries: entries
+        })
       });
       const data = await res.json();
 
       if (data.result === "success") {
+        var skipped = currentAttRoster.length - entries.length;
         msg.style.color = "#1a7a3b";
-        msg.textContent = "✅ Saved " + data.saved + " student(s) for " + className + ".";
+        msg.textContent = "✅ Saved " + data.saved + " student(s) for " + className + " on " + dateStr +
+                          (skipped > 0 ? " (" + skipped + " not marked, skipped)." : ".");
       } else {
         msg.style.color = "#b71c1c";
         msg.textContent = "❌ " + (data.message || "Save failed.");
@@ -911,7 +924,7 @@
       msg.textContent = "❌ Connection error while saving.";
     } finally {
       btn.disabled = false;
-      btn.textContent = "💾 Save Registrations";
+      btn.textContent = "💾 Save Attendance";
     }
   }
 
